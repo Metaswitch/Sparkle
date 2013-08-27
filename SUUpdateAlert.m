@@ -27,13 +27,14 @@
 
 @implementation SUUpdateAlert
 
-- (id)initWithAppcastItem:(SUAppcastItem *)item host:(SUHost *)aHost
+- (id)initWithAppcastItem:(SUAppcastItem *)item isRequired:(BOOL)required host:(SUHost *)aHost
 {
 	self = [super initWithHost:host windowNibName:@"SUUpdateAlert"];
 	if (self)
 	{
 		host = [aHost retain];
 		updateItem = [item retain];
+    updateRequired = required;
 		[self setShouldCascadeWindows:NO];
 		
 		// Alex: This dummy line makes sure that the binary is linked against WebKit.
@@ -152,7 +153,11 @@
 }
 
 - (void)awakeFromNib
-{	
+{
+  // Hide Skip/Later buttons if a minimum version is specified and the host version is not at least that version
+  [skipButton setHidden:updateRequired];
+  [laterButton setHidden:updateRequired];
+  
 	NSString*	sizeStr = [host objectForInfoDictionaryKey:SUFixedHTMLDisplaySizeKey];
 
 	if( [host isBackgroundApplication] )
@@ -266,6 +271,10 @@
 
 - (BOOL)windowShouldClose:note
 {
+  // Quit on close window if update is required
+  if (updateRequired)
+    [[NSApplication sharedApplication] terminate:self];
+  
 	[self endWithSelection:SURemindMeLaterChoice];
 	return YES;
 }
@@ -292,7 +301,16 @@
     }
 	else
 		[versionDisplayer formatVersion: &updateItemVersion andVersion: &hostVersion];
-    return [NSString stringWithFormat:SULocalizedString(@"%@ %@ is now available--you have %@. Would you like to download it now?", nil), [host name], updateItemVersion, hostVersion];
+  {
+     // Set the string to display in the update window, depending on whether the update is required.
+    NSString *updateMessage;
+    if (updateRequired)
+      updateMessage = @"This update is required in order to continue using the app.";
+    else
+      updateMessage = @"Would you like to download it now?";
+
+    return [NSString stringWithFormat:SULocalizedString(@"%@ %@ is now available--you have %@. %@", nil), [host name], updateItemVersion, hostVersion, updateMessage];
+  }
 }
 
 - (void)webView:(WebView *)sender didFinishLoadForFrame:frame

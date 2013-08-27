@@ -19,7 +19,7 @@
 
 - (void)didFindValidUpdate
 {
-	updateAlert = [[SUUpdateAlert alloc] initWithAppcastItem:updateItem host:host];
+	updateAlert = [[SUUpdateAlert alloc] initWithAppcastItem:updateItem isRequired:[self itemContainsRequiredUpdate:updateItem] host:host];
 	[updateAlert setDelegate:self];
 	
 	id<SUVersionDisplay>	versDisp = nil;
@@ -41,7 +41,11 @@
 	
 	// Only show the update alert if the app is active; otherwise, we'll wait until it is.
 	if ([NSApp isActive])
+  {
+    // TODO: Make the window modal so users can't ignore a required update.  If the code below is commented back in, the window is modal, but cannot be closed.
+    //[NSApp runModalForWindow:[updateAlert window]];
 		[[updateAlert window] makeKeyAndOrderFront:self];
+  }
 	else
 		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationDidBecomeActive:) name:NSApplicationDidBecomeActiveNotification object:NSApp];
 }
@@ -58,6 +62,8 @@
 
 - (void)applicationDidBecomeActive:(NSNotification *)aNotification
 {
+  // TODO: Make the window modal so users can't ignore a required update.  If the code below is commented back in, the window is modal, but cannot be closed.
+  //[NSApp runModalForWindow:[updateAlert window]];
 	[[updateAlert window] makeKeyAndOrderFront:self];
 	[[NSNotificationCenter defaultCenter] removeObserver:self name:@"NSApplicationDidBecomeActiveNotification" object:NSApp];
 }
