@@ -1,5 +1,8 @@
-# Sparkle 
-is an easy-to-use software update framework for Cocoa developers.
+# Sparkle for Accession Desktop 
+
+This is a custom version the Sparkle repository for use with Accession Desktop.  If you would like to make further changes to customise Sparkle for Accession Desktop, please follow the instructions here: https://docs.google.com/a/metaswitch.com/document/d/1Mexfw1RRGlwnwYs_yTYTabBit7OQpvCNvTNaBiHFAIQ
+
+Sparkle is an easy-to-use software update framework for Cocoa developers.
 
 * True self-updating--no work required from the user.
 

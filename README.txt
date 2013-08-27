@@ -1,1 +1,0 @@
-This is a custom version the Sparkle repository for use with Accession Desktop.  If you would like to make further changes to customise Sparkle for Accession Desktop, please follow the instructions here: https://docs.google.com/a/metaswitch.com/document/d/1Mexfw1RRGlwnwYs_yTYTabBit7OQpvCNvTNaBiHFAIQ
