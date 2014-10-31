@@ -71,6 +71,13 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 
 @implementation SUPlainInstaller (Internals)
 
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
+
+
 + (NSString *)temporaryNameForPath:(NSString *)path
 {
 	// Let's try to read the version number so the filename will be more meaningful.
@@ -202,7 +209,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 		// because the ownership change will fail if the file is quarantined.
 		if (res)
 		{
-			SULog(@"releaseFromQuarantine");
+			[sLogger log:@"releaseFromQuarantine"];
 			[self performSelectorOnMainThread:@selector(releaseFromQuarantine:) withObject:src waitUntilDone:YES];
 		}
 		
@@ -211,7 +218,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 			const char* coParams[] = { "-R", uidgid, srcPath, NULL };
 			res = AuthorizationExecuteWithPrivilegesAndWait( auth, "/usr/sbin/chown", kAuthorizationFlagDefaults, coParams );
 			if( !res )
-				SULog( @"chown -R %s %s failed.", uidgid, srcPath );
+				[sLogger log:@"chown -R %s %s failed.", uidgid, srcPath];
 		}
 		
 		BOOL	haveDst = [[NSFileManager defaultManager] fileExistsAtPath: dst];
@@ -220,7 +227,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 			const char*	rmParams[] = { "-rf", tmpPath, NULL };
 			res = AuthorizationExecuteWithPrivilegesAndWait( auth, "/bin/rm", kAuthorizationFlagDefaults, rmParams );
 			if( !res )
-				SULog( @"rm failed" );
+				[sLogger log:@"rm failed"];
 		}
 		
 		if( res && haveDst )	// Move old exe to tmp path.
@@ -228,7 +235,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 			const char* mvParams[] = { "-f", dstPath, tmpPath, NULL };
 			res = AuthorizationExecuteWithPrivilegesAndWait( auth, "/bin/mv", kAuthorizationFlagDefaults, mvParams );
 			if( !res )
-				SULog( @"mv 1 failed" );
+				[sLogger log:@"mv 1 failed"];
 		}
 				
 		if( res )	// Move new exe to old exe's path.
@@ -236,7 +243,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 			const char* mvParams2[] = { "-f", srcPath, dstPath, NULL };
 			res = AuthorizationExecuteWithPrivilegesAndWait( auth, "/bin/mv", kAuthorizationFlagDefaults, mvParams2 );
 			if( !res )
-				SULog( @"mv 2 failed" );
+				[sLogger log:@"mv 2 failed"];
 		}
 		
 //		if( res && haveDst /*&& !foundTrash*/ )	// If we managed to put the old exe in the trash, leave it there for the user to delete or recover.
@@ -258,7 +265,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 		// in the application being quarantined.
         if (res)
 		{
-			SULog(@"releaseFromQuarantine after installing");
+			[sLogger log:@"releaseFromQuarantine after installing"];
 			[self performSelectorOnMainThread:@selector(releaseFromQuarantine:) withObject:dst waitUntilDone:YES];
 		}
 
@@ -313,7 +320,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 			const char* coParams[] = { "-R", uidgid, srcPath, NULL };
 			res = AuthorizationExecuteWithPrivilegesAndWait( auth, "/usr/sbin/chown", kAuthorizationFlagDefaults, coParams );
 			if( !res )
-				SULog(@"Can't set permissions");
+				[sLogger log:@"Can't set permissions"];
 		}
 		
 		BOOL	haveDst = [[NSFileManager defaultManager] fileExistsAtPath: dst];
@@ -322,7 +329,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 			const char*	rmParams[] = { "-rf", dstPath, NULL };
 			res = AuthorizationExecuteWithPrivilegesAndWait( auth, "/bin/rm", kAuthorizationFlagDefaults, rmParams );
 			if( !res )
-				SULog(@"Can't remove destination file");
+				[sLogger log:@"Can't remove destination file"];
 		}
 		
 		if( res )	// Move!.
@@ -330,7 +337,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 			const char* mvParams[] = { "-f", srcPath, dstPath, NULL };
 			res = AuthorizationExecuteWithPrivilegesAndWait( auth, "/bin/mv", kAuthorizationFlagDefaults, mvParams );
 			if( !res )
-				SULog(@"Can't move source file");
+				[sLogger log:@"Can't move source file"];
 		}
 		
 		AuthorizationFree(auth, 0);
@@ -378,7 +385,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 			const char*	rmParams[] = { "-rf", srcPath, NULL };
 			res = AuthorizationExecuteWithPrivilegesAndWait( auth, "/bin/rm", kAuthorizationFlagDefaults, rmParams );
 			if( !res )
-				SULog(@"Can't remove destination file");
+				[sLogger log:@"Can't remove destination file"];
 		}
 		
 		AuthorizationFree(auth, 0);
@@ -416,7 +423,7 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 
 + (void)_movePathToTrash:(NSString *)path
 {
-	//SULog(@"Moving %@ to the trash.", path);
+	//[sLogger log:@"Moving %@ to the trash.", path];
 	NSInteger tag = 0;
 	if (![[NSWorkspace sharedWorkspace] performFileOperation:NSWorkspaceRecycleOperation source:[path stringByDeletingLastPathComponent] destination:@"" files:[NSArray arrayWithObject:[path lastPathComponent]] tag:&tag])
 	{
@@ -426,13 +433,13 @@ static BOOL AuthorizationExecuteWithPrivilegesAndWait(AuthorizationRef authoriza
 		{
 			NSError		*err = nil;
 			if( ![self _movePathWithForcedAuthentication: path toPath: trashPath error: &err] )
-				SULog(@"Sparkle error: couldn't move %@ to the trash (%@). %@", path, trashPath, err);
+				[sLogger log: @"Sparkle error: couldn't move %@ to the trash (%@). %@", path, trashPath, err];
 		}
 		else
-			SULog(@"Sparkle error: couldn't move %@ to the trash. This is often a sign of a permissions error.", path);
+			[sLogger log:@"Sparkle error: couldn't move %@ to the trash. This is often a sign of a permissions error.", path];
 	}
 	else
-		;//SULog(@"Moved %@ to the trash.", path);
+		;//[sLogger log:@"Moved %@ to the trash.", path];
 }
 
 + (BOOL)copyPathWithAuthentication:(NSString *)src overPath:(NSString *)dst temporaryName:(NSString *)tmp error:(NSError **)error

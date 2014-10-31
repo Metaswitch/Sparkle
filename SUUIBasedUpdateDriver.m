@@ -15,6 +15,8 @@
 #import "SUConstants.h"
 #import "SUPasswordPrompt.h"
 
+#pragma GCC diagnostic ignored "-Wformat-security"
+
 @implementation SUUIBasedUpdateDriver
 
 - (void)didFindValidUpdate

@@ -18,6 +18,12 @@
 
 static NSString*	sUpdateFolder = nil;
 
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
+
 +(NSString*)	updateFolder
 {
 	return sUpdateFolder;
@@ -136,7 +142,7 @@ static NSString*	sUpdateFolder = nil;
 {
 	// *** GETS CALLED ON NON-MAIN THREAD!
 	
-	SULog( @"mdimporting" );
+	[sLogger log:@"mdimporting"];
 	
 	NSTask *mdimport = [[[NSTask alloc] init] autorelease];
 	[mdimport setLaunchPath:@"/usr/bin/mdimport"];
@@ -149,7 +155,7 @@ static NSString*	sUpdateFolder = nil;
 	@catch (NSException * launchException)
 	{
 		// No big deal.
-		SULog(@"Sparkle Error: %@", [launchException description]);
+		[sLogger log:@"Sparkle Error: %@", [launchException description]];
 	}
 }
 

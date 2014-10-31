@@ -20,6 +20,11 @@ extern OSStatus SecStaticCodeCreateWithPath(CFURLRef path, SecCSFlags flags, Sec
 
 extern OSStatus SecStaticCodeCheckValidityWithErrors(SecStaticCodeRef staticCode, SecCSFlags flags, SecRequirementRef requirement, CFErrorRef *errors) __attribute__((weak_import));
 
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
 
 + (BOOL)codeSignatureIsValidAtPath:(NSString *)destinationPath error:(NSError **)error
 {
@@ -33,26 +38,26 @@ extern OSStatus SecStaticCodeCheckValidityWithErrors(SecStaticCodeRef staticCode
     
     result = SecCodeCopySelf(kSecCSDefaultFlags, &hostCode);
     if (result != 0) {
-        SULog(@"Failed to copy host code %d", result);
+        [sLogger log:@"Failed to copy host code %d", result];
         goto finally;
     }
     
     result = SecCodeCopyDesignatedRequirement(hostCode, kSecCSDefaultFlags, &requirement);
     if (result != 0) {
-        SULog(@"Failed to copy designated requirement %d", result);
+        [sLogger log:@"Failed to copy designated requirement %d", result];
         goto finally;
     }
     
     NSBundle *newBundle = [NSBundle bundleWithPath:destinationPath];
     if (!newBundle) {
-        SULog(@"Failed to load NSBundle for update");
+        [sLogger log:@"Failed to load NSBundle for update"];
         result = -1;
         goto finally;
     }
     
     result = SecStaticCodeCreateWithPath((CFURLRef)[newBundle executableURL], kSecCSDefaultFlags, &staticCode);
     if (result != 0) {
-        SULog(@"Failed to get static code %d", result);
+        [sLogger log:@"Failed to get static code %d", result];
         goto finally;
     }
     

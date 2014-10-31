@@ -38,6 +38,12 @@
 
 @implementation TerminationListener
 
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
+
 - (id) initWithHostPath:(const char *)inhostpath executablePath:(const char *)execpath parentProcessId:(pid_t)ppid folderPath: (const char*)infolderpath shouldRelaunch:(BOOL)relaunch
 		selfPath: (NSString*)inSelfPath
 {
@@ -126,7 +132,7 @@
     {
         NSError *theError = nil;
         if( ![SUPlainInstaller _removeFileAtPath: [SUInstaller updateFolder] error: &theError] )
-            SULog( @"Couldn't remove update folder: %@.", theError );
+            [sLogger log:@"Couldn't remove update folder: %@.", theError];
     }
 #if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4
     [[NSFileManager defaultManager] removeFileAtPath: selfPath handler: nil];

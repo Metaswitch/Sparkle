@@ -14,6 +14,12 @@
 
 @implementation SUDiskImageUnarchiver
 
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
+
 + (BOOL)canUnarchivePath:(NSString *)path
 {
 	return [[path pathExtension] isEqualToString:@"dmg"];
@@ -43,7 +49,7 @@
     
 	BOOL mountedSuccessfully = NO;
 	
-	SULog(@"Extracting %@ as a DMG", archivePath);
+	[sLogger log:@"Extracting %@ as a DMG", archivePath];
 	
 	// get a unique mount point path
 	NSString *mountPointName = nil;
@@ -101,7 +107,7 @@
             [self performSelectorOnMainThread:@selector(requestPasswordFromDelegate) withObject:nil waitUntilDone:NO];
             goto finally;
         } else {
-            SULog( @"hdiutil failed with code: %d data: <<%@>>", taskResult, resultStr );
+            [sLogger log: @"hdiutil failed with code: %d data: <<%@>>", taskResult, resultStr];
             goto reportError;
         }
 	}
@@ -115,7 +121,7 @@
         NSArray *contents = [manager contentsOfDirectoryAtPath:mountPoint error:&error];
         if (error)
         {
-            SULog(@"Couldn't enumerate contents of archive mounted at %@: %@", mountPoint, error);
+            [sLogger log:@"Couldn't enumerate contents of archive mounted at %@: %@", mountPoint, error];
             goto reportError;
         }
         
@@ -130,11 +136,11 @@
             if (![manager isReadableFileAtPath:fromPath])
                 continue;
             
-            SULog(@"copyItemAtPath:%@ toPath:%@", fromPath, toPath);
+            [sLogger log:@"copyItemAtPath:%@ toPath:%@", fromPath, toPath];
             
             if (![manager copyItemAtPath:fromPath toPath:toPath error:&error])
             {
-                SULog(@"Couldn't copy item: %@ : %@", error, error.userInfo ? error.userInfo : @"");
+                [sLogger log:@"Couldn't copy item: %@ : %@", error, error.userInfo ? error.userInfo : @""];
                 goto reportError;
             }
         }
@@ -161,7 +167,7 @@ finally:
 	if (mountedSuccessfully)
 		[NSTask launchedTaskWithLaunchPath:@"/usr/bin/hdiutil" arguments:[NSArray arrayWithObjects:@"detach", mountPoint, @"-force", nil]];
 	else
-		SULog(@"Can't mount DMG %@",archivePath);
+		[sLogger log:@"Can't mount DMG %@", archivePath];
 	[pool drain];
 }
 

@@ -26,6 +26,12 @@
 
 @implementation SUBasicUpdateDriver
 
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
+
 - (void)checkForUpdatesAtURL:(NSURL *)URL host:(SUHost *)aHost
 {	
 	[super checkForUpdatesAtURL:URL host:aHost];
@@ -219,7 +225,7 @@
         if ([SUCodeSigningVerifier codeSignatureIsValidAtPath:newBundlePath error:&error]) {
             return YES;
         } else {
-            SULog(@"Code signature check on update failed: %@", error);
+            [sLogger log:@"Code signature check on update failed: %@", error];
         }
     }
     
@@ -248,7 +254,7 @@
 	SUUnarchiver *unarchiver = [SUUnarchiver unarchiverForPath:downloadPath updatingHost:host];
 	if (!unarchiver)
 	{
-		SULog(@"Sparkle Error: No valid unarchiver for %@!", downloadPath);
+		[sLogger log:@"Sparkle Error: No valid unarchiver for %@!", downloadPath];
 		[self unarchiverDidFail:nil];
 		return;
 	}
@@ -397,9 +403,9 @@
 - (void)abortUpdateWithError:(NSError *)error
 {
 	if ([error code] != SUNoUpdateError) // Let's not bother logging this.
-		SULog(@"Sparkle Error: %@", [error localizedDescription]);
+		[sLogger log:@"Sparkle Error: %@", [error localizedDescription]];
 	if ([error localizedFailureReason])
-		SULog(@"Sparkle Error (continued): %@", [error localizedFailureReason]);
+		[sLogger log:@"Sparkle Error (continued): %@", [error localizedFailureReason]];
 	if (download)
 		[download cancel];
 	[self abortUpdate];

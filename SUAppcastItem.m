@@ -18,6 +18,12 @@
 
 // Attack of accessors!
 
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
+
 - (NSString *)title { return [[title retain] autorelease]; }
 
 - (void)setTitle:(NSString *)aTitle
@@ -187,7 +193,7 @@
 		if( theInfoURL )
 		{
 			if( ![theInfoURL isKindOfClass: [NSString class]] )
-				SULog(@"SUAppcastItem -initWithDictionary: Info URL is not of valid type.");
+				[sLogger log:@"SUAppcastItem -initWithDictionary: Info URL is not of valid type: is %@", [theInfoURL class]];
 			else
 				[self setInfoURL:[NSURL URLWithString:theInfoURL]];
 		}

@@ -20,12 +20,11 @@
 
 #include <Foundation/Foundation.h>
 
-
-// -----------------------------------------------------------------------------
-//	Prototypes:
-// -----------------------------------------------------------------------------
-
-void	SUClearLog( void );
-void	SULog( NSString* format, ... );
+@interface Logger : NSObject
++(void) setLogFile: (NSString *)logFile;
++(void) wrapLogsIfNecessary;
+-(id) initWithClass: (Class) clazz;
+-(void) log: (NSString *)format, ...;
+@end
 
 

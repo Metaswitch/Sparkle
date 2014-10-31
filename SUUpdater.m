@@ -43,6 +43,11 @@
 
 static NSMutableDictionary *sharedUpdaters = nil;
 static NSString * const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaultsObservationContext";
+static Logger *sLogger;
+
++(void) initialize {
+        sLogger = [[Logger alloc] initWithClass:self];
+}
 
 + (SUUpdater *)sharedUpdater
 {
@@ -129,34 +134,51 @@ static NSString * const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefault
 
 - (void)startUpdateCycle
 {
+    [sLogger log:@"Update cycle begins."];
+    
     BOOL shouldPrompt = NO;
     
 	// If the user has been asked about automatic checks, don't bother prompting
 	if ([host objectForUserDefaultsKey:SUEnableAutomaticChecksKey])
     {
+        [sLogger log:@"User has already been asked about automatic checks; don't prompt again"];
         shouldPrompt = NO;
     }
     // Does the delegate want to take care of the logic for when we should ask permission to update?
     else if ([delegate respondsToSelector:@selector(updaterShouldPromptForPermissionToCheckForUpdates:)])
     {
         shouldPrompt = [delegate updaterShouldPromptForPermissionToCheckForUpdates:self];
+        [sLogger log:@"Asked delegate whether we should prompt for update; it said %@", shouldPrompt];
     }	
     // Has he been asked already? And don't ask if the host has a default value set in its Info.plist.
     else if ([host objectForKey:SUEnableAutomaticChecksKey] == nil)
     {
         if ([host objectForUserDefaultsKey:SUEnableAutomaticChecksKeyOld])
+        {
+            [sLogger log:@"Old-style automatic update check key detected: %@",
+                     [host boolForUserDefaultsKey:SUEnableAutomaticChecksKeyOld]];
             [self setAutomaticallyChecksForUpdates:[host boolForUserDefaultsKey:SUEnableAutomaticChecksKeyOld]];
+        }
         // Now, we don't want to ask the user for permission to do a weird thing on the first launch.
         // We wait until the second launch, unless explicitly overridden via SUPromptUserOnFirstLaunchKey.
         else if (![host objectForKey:SUPromptUserOnFirstLaunchKey])
         {
             if ([host boolForUserDefaultsKey:SUHasLaunchedBeforeKey] == NO)
+            {
+                [sLogger log:@"Should ask user about automatic update checks, but skip as this is the first app run"];
                 [host setBool:YES forUserDefaultsKey:SUHasLaunchedBeforeKey];
+            }
             else
+            {
+                [sLogger log:@"Will ask user about automatic update checks"];
                 shouldPrompt = YES;
+            }
         }
         else
+        {
+            [sLogger log:@"Will ask user about automatic update checks (even though it's the first app run)"];
             shouldPrompt = YES;
+        }
     }
     
     if (shouldPrompt)
@@ -271,7 +293,7 @@ static NSString * const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefault
 		
 		[pool release];
 	NS_HANDLER
-		SULog(@"UNCAUGHT EXCEPTION IN UPDATE CHECK TIMER: %@",[localException reason]);
+        [sLogger log:@"UNCAUGHT EXCEPTION IN UPDATE CHECK TIMER: %@",[localException reason]];
 		// Don't propagate the exception beyond here. In Carbon apps that would trash the stack.
 	NS_ENDHANDLER
 }
@@ -308,8 +330,7 @@ static NSString * const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefault
 	if ([self updateInProgress]) { return; }
 	if (checkTimer) { [checkTimer invalidate]; [checkTimer release]; checkTimer = nil; }		// UK 2009-03-16 Timer is non-repeating, may have invalidated itself, so we had to retain it.
 	
-	SUClearLog();
-	SULog( @"===== %@ =====", [[NSFileManager defaultManager] displayNameAtPath: [[NSBundle mainBundle] bundlePath]] );
+	[sLogger log:@"===== %@ =====", [[NSFileManager defaultManager] displayNameAtPath: [[NSBundle mainBundle] bundlePath]]];
 		
 	[self willChangeValueForKey:@"lastUpdateCheckDate"];
 	[host setObject:[NSDate date] forUserDefaultsKey:SULastCheckTimeKey];

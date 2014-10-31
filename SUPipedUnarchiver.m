@@ -13,6 +13,12 @@
 
 @implementation SUPipedUnarchiver
 
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
+
 + (SEL)selectorConformingToTypeOfPath:(NSString *)path
 {
 	static NSDictionary *typeSelectorDictionary;
@@ -53,7 +59,7 @@
 	FILE *fp = NULL, *cmdFP = NULL;
     char *oldDestinationString = NULL;
 	
-	SULog(@"Extracting %@ using '%@'",archivePath,command);
+	[sLogger log:@"Extracting %@ using '%@'", archivePath, command];
     
 	// Get the file size.
 #if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4

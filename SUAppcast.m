@@ -39,6 +39,12 @@
 
 @implementation SUAppcast
 
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
+
 - (void)dealloc
 {
 	[items release];
@@ -206,7 +212,7 @@
 			}
             else
             {
-				SULog(@"Sparkle Updater: Failed to parse appcast item: %@.\nAppcast dictionary was: %@", errString, dict);
+				[sLogger log:@"Sparkle Updater: Failed to parse appcast item: %@.\nAppcast dictionary was: %@", errString, dict];
             }
             [nodesDict removeAllObjects];
             [dict removeAllObjects];

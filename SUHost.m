@@ -15,6 +15,12 @@
 
 @implementation SUHost
 
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
+
 - (id)initWithBundle:(NSBundle *)aBundle
 {
 	if ((self = [super init]))
@@ -22,7 +28,7 @@
 		if (aBundle == nil) aBundle = [NSBundle mainBundle];
         bundle = [aBundle retain];
 		if (![bundle bundleIdentifier])
-			SULog(@"Sparkle Error: the bundle being updated at %@ has no CFBundleIdentifier! This will cause preference read/write to not work properly.", bundle);
+			[sLogger log:@"Sparkle Error: the bundle being updated at %@ has no CFBundleIdentifier! This will cause preference read/write to not work properly.", bundle];
 
 		defaultsDomain = [[bundle objectForInfoDictionaryKey:SUDefaultsDomainKey] retain];
 		if (!defaultsDomain)
@@ -59,7 +65,7 @@
     NSString *appSupportPath = nil;
     if (!appSupportPaths || [appSupportPaths count] == 0)
     {
-        SULog(@"Failed to find app support directory! Using ~/Library/Application Support...");
+        [sLogger log: @"Failed to find app support directory! Using ~/Library/Application Support..."];
         appSupportPath = [@"~/Library/Application Support" stringByExpandingTildeInPath];
     }
     else
