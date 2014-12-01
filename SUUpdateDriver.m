@@ -59,7 +59,7 @@ static Logger *sLogger;
 
 - (void)setHost:(SUHost*)newHost
 {
-    [sLogger log:@"Set new host: %@ <%@,%@>", newHost, [newHost bundlePath], [new installation]]
+    [sLogger log:@"Set new host: %@ <%@,%@>", newHost, [newHost bundlePath], [newHost installationPath]];
     [host release];
     host = [newHost retain];
 }

@@ -10,10 +10,18 @@
 
 #import "SUAppcast.h"
 #import "SUAppcastItem.h"
+#import "SULog.h"
 #import "SUVersionComparisonProtocol.h"
 #import "SUStandardVersionComparator.h"
 
 @implementation SUStandardVersionComparator
+
+static Logger *sLogger;
+
++(void) initialize
+{
+    sLogger = [[Logger alloc] initWithClass:self];
+}
 
 + (SUStandardVersionComparator *)defaultComparator
 {
@@ -80,6 +88,8 @@ typedef enum {
 
 - (NSComparisonResult)compareVersion:(NSString *)versionA toVersion:(NSString *)versionB;
 {
+    [sLogger log:@"Comparing versions '%@' and '%@'", versionA, versionB];
+    
 	NSArray *partsA = [self splitVersionString:versionA];
     NSArray *partsB = [self splitVersionString:versionB];
     
@@ -89,6 +99,7 @@ typedef enum {
     SUCharacterType typeA, typeB;
 	
     n = MIN([partsA count], [partsB count]);
+
     for (i = 0; i < n; ++i) {
         partA = [partsA objectAtIndex:i];
         partB = [partsB objectAtIndex:i];
@@ -103,13 +114,22 @@ typedef enum {
                 valueA = [partA longLongValue];
                 valueB = [partB longLongValue];
                 if (valueA > valueB) {
+                    [sLogger log:@"%@ is greater", versionA];
                     return NSOrderedDescending;
                 } else if (valueA < valueB) {
+                    [sLogger log:@"%@ is greater", versionB];
                     return NSOrderedAscending;
                 }
             } else if (typeA == kStringType) {
                 NSComparisonResult result = [partA compare:partB];
                 if (result != NSOrderedSame) {
+                    if (result == NSOrderedDescending) {
+                        [sLogger log:@"%@ is greater", versionA];
+                    } else if (result == NSOrderedAscending){
+                        [sLogger log:@"%@ is greater", versionB];
+                    } else {
+                        [sLogger log:@"Logging error - unexpected comparator result", result];
+                    }
                     return result;
                 }
             }
@@ -117,20 +137,25 @@ typedef enum {
             // Not the same type? Now we have to do some validity checking
             if (typeA != kStringType && typeB == kStringType) {
                 // typeA wins
+                [sLogger log:@"%@ is invalid, so say %@ is greater", versionB, versionA];
                 return NSOrderedDescending;
             } else if (typeA == kStringType && typeB != kStringType) {
                 // typeB wins
+                [sLogger log:@"%@ is invalid, so say %@ is greater", versionA, versionB];
                 return NSOrderedAscending;
             } else {
                 // One is a number and the other is a period. The period is invalid
                 if (typeA == kNumberType) {
+                    [sLogger log:@"%@ is invalid, so say %@ is greater", versionB, versionA];
                     return NSOrderedDescending;
                 } else {
+                    [sLogger log:@"%@ is invalid, so say %@ is greater", versionA, versionB];
                     return NSOrderedAscending;
                 }
             }
         }
     }
+    
     // The versions are equal up to the point where they both still have parts
     // Lets check to see if one is larger than the other
     if ([partsA count] != [partsB count]) {
@@ -154,14 +179,30 @@ typedef enum {
         // Check the type
         if (missingType == kStringType) {
             // It's a string. Shorter version wins
+            if (shorterResult == NSOrderedDescending) {
+               [sLogger log:@"%@ is invalid, so say %@ is greater", versionB, versionA];
+            } else if (shorterResult == NSOrderedAscending){
+                [sLogger log:@"%@ is invalid, so say %@ is greater", versionA, versionB];
+            } else {
+                [sLogger log:@"Logging error - unexpected comparator result"];
+            }
+
             return shorterResult;
         } else {
             // It's a number/period. Larger version wins
+            if (largerResult == NSOrderedDescending) {
+                [sLogger log:@"%@ is greater", versionA];
+            } else if (largerResult == NSOrderedAscending){
+                [sLogger log:@"%@ is greater", versionB];
+            } else {
+                [sLogger log:@"Logging error - unexpected comparator result"];
+            }
             return largerResult;
         }
     }
     
     // The 2 strings are identical
+    [sLogger log:@"Both versions are equivalent"];
     return NSOrderedSame;
 }
 

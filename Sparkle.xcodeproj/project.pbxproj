@@ -19,7 +19,7 @@
 		55C14C19136EF2C700649790 /* SUUpdatePermissionPrompt.xib in Resources */ = {isa = PBXBuildFile; fileRef = 55C14C05136EF2C700649790 /* SUUpdatePermissionPrompt.xib */; };
 		55C14EE8136EF61D00649790 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 525A278F133D6AE900FD8D70 /* Cocoa.framework */; };
 		55C14F00136EF6B700649790 /* SUConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 61299A5F09CA6EB100B7442F /* SUConstants.m */; };
-		55C14F06136EF6DB00649790 /* SULog.h in Headers */ = {isa = PBXBuildFile; fileRef = 55C14F04136EF6DB00649790 /* SULog.h */; };
+		55C14F06136EF6DB00649790 /* SULog.h in Headers */ = {isa = PBXBuildFile; fileRef = 55C14F04136EF6DB00649790 /* SULog.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		55C14F07136EF6DB00649790 /* SULog.m in Sources */ = {isa = PBXBuildFile; fileRef = 55C14F05136EF6DB00649790 /* SULog.m */; };
 		55C14F08136EF6DB00649790 /* SULog.m in Sources */ = {isa = PBXBuildFile; fileRef = 55C14F05136EF6DB00649790 /* SULog.m */; };
 		55C14F0C136EF6EA00649790 /* SUHost.m in Sources */ = {isa = PBXBuildFile; fileRef = 61EF67550E25B58D00F754E0 /* SUHost.m */; };
@@ -765,6 +765,7 @@
 				61B5FC0D09C4FC8200B25A18 /* SUAppcast.h in Headers */,
 				61B5FC7009C51F4A00B25A18 /* SUAppcastItem.h in Headers */,
 				61B5FCDF09C52A9F00B25A18 /* SUUpdateAlert.h in Headers */,
+				55C14F06136EF6DB00649790 /* SULog.h in Headers */,
 				6196CFF909C72148000DC222 /* SUStatusController.h in Headers */,
 				61299A2F09CA2DAB00B7442F /* SUDSAVerifier.h in Headers */,
 				61299A4A09CA2DD000B7442F /* SUPlainInstallerInternals.h in Headers */,
@@ -796,7 +797,6 @@
 				61CFB3290E385186007A1735 /* Sparkle.pch in Headers */,
 				5D06E9390FD69271005AE3F6 /* SUBinaryDeltaUnarchiver.h in Headers */,
 				611142E910FB1BE5009810AA /* bspatch.h in Headers */,
-				55C14F06136EF6DB00649790 /* SULog.h in Headers */,
 				55C14F0F136EF73600649790 /* finish_installation.pch in Headers */,
 				6158A1C5137904B300487EC1 /* SUUpdater_Private.h in Headers */,
 				93FB277A156BD80D001937C7 /* SUPasswordPrompt.h in Headers */,
@@ -859,7 +859,7 @@
 			name = "Sparkle Unit Tests";
 			productName = "Sparkle Unit Tests";
 			productReference = 612279D90DB5470200AB99EA /* Sparkle Unit Tests.octest */;
-			productType = "com.apple.product-type.bundle";
+			productType = "com.apple.product-type.bundle.ocunit-test";
 		};
 		61B5F90109C4CEE200B25A18 /* Sparkle Test App */ = {
 			isa = PBXNativeTarget;

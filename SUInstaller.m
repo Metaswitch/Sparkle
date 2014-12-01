@@ -43,9 +43,19 @@ static Logger *sLogger;
 		err = FSIsAliasFile(&fileRef, &aliasFileFlag, &folderFlag);
 	
 	if (noErr == err)
+    {
+        [sLogger log:@"Is alias folder at path %@? %s (isAlias? %s, isFolder? %s)", path,
+         (aliasFileFlag && folderFlag) ? "true" : "false",
+         aliasFileFlag ? "true" : "false",
+         folderFlag ? "true" : "false"];
+        
 		return (BOOL)(aliasFileFlag && folderFlag);
+    }
 	else
-		return NO;	
+    {
+        [sLogger log:@"WARNING: Could not determine if %@ is an alias folder; assume not. Error was: %@", err];
+		return NO;
+    }
 }
 
 + (NSString *)installSourcePathInUpdateFolder:(NSString *)inUpdateFolder forHost:(SUHost *)host isPackage:(BOOL *)isPackagePtr
@@ -154,8 +164,8 @@ static Logger *sLogger;
 	}
 	@catch (NSException * launchException)
 	{
-		// No big deal.
-		[sLogger log:@"Sparkle Error: %@", [launchException description]];
+		// No big deal
+		[sLogger log:@"WARNING: Sparkle Error: %@", [launchException description]];
 	}
 }
 

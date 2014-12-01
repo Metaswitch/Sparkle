@@ -14,7 +14,7 @@
 
 #import "SUHost.h"
 #import <WebKit/WebKit.h>
-
+#import "SULog.h"
 #import "SUConstants.h"
 
 
@@ -26,6 +26,12 @@
 
 
 @implementation SUUpdateAlert
+
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
 
 - (id)initWithAppcastItem:(SUAppcastItem *)item isRequired:(BOOL)required host:(SUHost *)aHost
 {
@@ -72,26 +78,32 @@
 
 - (IBAction)installUpdate: (id)sender
 {
+    [sLogger log:@"User clicked 'install update'"];
 	[self endWithSelection:SUInstallUpdateChoice];
 }
 
 - (IBAction)openInfoURL: (id)sender
 {
+    [sLogger log:@"User clicked 'open info URL'"];
 	[self endWithSelection:SUOpenInfoURLChoice];
 }
 
 - (IBAction)skipThisVersion: (id)sender
 {
+    [sLogger log:@"User clicked 'skip this version'"];
 	[self endWithSelection:SUSkipThisVersionChoice];
 }
 
 - (IBAction)remindMeLater: (id)sender
 {
+    [sLogger log:@"User clicked 'remind me later'"];
 	[self endWithSelection:SURemindMeLaterChoice];
 }
 
 - (void)displayReleaseNotes
 {
+    [sLogger log:@"Entering displayReleaseNotes"];
+    
 	// Set the default font	
 	[releaseNotesView setPreferencesIdentifier:[SPARKLE_BUNDLE bundleIdentifier]];
 	[[releaseNotesView preferences] setStandardFontFamily:[[NSFont systemFontOfSize:8] familyName]];
@@ -112,15 +124,19 @@
 	{
 		if ([[updateItem releaseNotesURL] isFileURL])
 		{
+            [sLogger log:@"WARNING: file:// URL release notes are not permitted - show an error"];
+            
 			[[releaseNotesView mainFrame] loadHTMLString:@"Release notes with file:// URLs are not supported for security reasons&mdash;Javascript would be able to read files on your file system." baseURL:nil];
 		}
 		else
 		{
+            [sLogger log:@"Loading request notes URL"];
 			[[releaseNotesView mainFrame] loadRequest:[NSURLRequest requestWithURL:[updateItem releaseNotesURL] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:30]];
 		}
 	}
 	else
 	{
+        [sLogger log:@"No release notes URL configured. Just show update description"];
 		[[releaseNotesView mainFrame] loadHTMLString:[updateItem itemDescription] baseURL:nil];
 	}	
 }
@@ -131,37 +147,62 @@
 	if (shouldShowReleaseNotes == nil)
 	{
 		// UK 2007-09-18: Don't show release notes if RSS item contains no description and no release notes URL:
+        [sLogger log:@"Will not show release notes"];
 		return( ([updateItem itemDescription] != nil
 			&& [[[updateItem itemDescription] stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]] length] > 0)
 			|| [updateItem releaseNotesURL] != nil );
 	}
 	else
+    {
+        [sLogger log:@"Will show release notes"];
 		return [shouldShowReleaseNotes boolValue];
+    }
 }
 
 - (BOOL)allowsAutomaticUpdates
 {
 	BOOL		allowAutoUpdates = YES;	// Defaults to YES.
 	if( [host objectForInfoDictionaryKey:SUAllowsAutomaticUpdatesKey] )
+    {
 		allowAutoUpdates = [host boolForInfoDictionaryKey: SUAllowsAutomaticUpdatesKey];
+        [sLogger log:@"Have config for SUAllowsAutomaticUpdatesKey: value=%s", allowAutoUpdates ? "true" : "false"];
+    }
+    else
+    {
+        [sLogger log:@"No stored config for SUAllowsAutomaticUpdatesKey"];
+    }
 	
 	// UK 2007-08-31: Give delegate a chance to modify this choice:
 	if( delegate && [delegate respondsToSelector: @selector(updateAlert:shouldAllowAutoUpdate:)] )
-		[delegate updateAlert: self shouldAllowAutoUpdate: &allowAutoUpdates];
+    {
+        BOOL oldAllowAutoUpdates = allowAutoUpdates;
+        [delegate updateAlert: self shouldAllowAutoUpdate: &allowAutoUpdates];
+        if (oldAllowAutoUpdates != allowAutoUpdates)
+        {
+            [sLogger log:@"Delegate changed allowAutoUpdates to %s", allowAutoUpdates ? "true" : "false"];
+        }
+    }
 	
 	return allowAutoUpdates;
 }
 
 - (void)awakeFromNib
 {
+    [sLogger log:@"Awake from nib"];
+    
   // Hide Skip/Later buttons if a minimum version is specified and the host version is not at least that version
+  [sLogger log:@"Hide 'skip' and 'later' buttons? %s", updateRequired ? "true" : "false"];
   [skipButton setHidden:updateRequired];
   [laterButton setHidden:updateRequired];
   
 	NSString*	sizeStr = [host objectForInfoDictionaryKey:SUFixedHTMLDisplaySizeKey];
 
 	if( [host isBackgroundApplication] )
+    {
+        [sLogger log:@"We're a background application, so float update alert over other windows"];
 		[[self window] setLevel:NSFloatingWindowLevel];	// This means the window will float over all other apps, if our app is switched out ?! UK 2007-09-04
+    }
+    
 	[[self window] setFrameAutosaveName: sizeStr ? @"" : @"SUUpdateAlertFrame"];
 		
 	// We're gonna do some frame magic to match the window's size to the description field and the presence of the release notes view.
@@ -273,10 +314,14 @@
 {
   // Quit on close window if update is required
   if (updateRequired)
-    [[NSApplication sharedApplication] terminate:self];
-  
-	[self endWithSelection:SURemindMeLaterChoice];
-	return YES;
+  {
+     [sLogger log:@"Update alert about to close, but update is compulsory - quit app"];
+     [[NSApplication sharedApplication] terminate:self];
+  }
+    
+  [sLogger log:@"Update alert about to close"];
+  [self endWithSelection:SURemindMeLaterChoice];
+  return YES;
 }
 
 - (NSImage *)applicationIcon

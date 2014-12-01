@@ -178,6 +178,7 @@ static Logger *sLogger;
 		
 		if(!newVersion )
 		{
+            [sLogger log:@"ERROR: Feed item lacks sparkle:version attribute, and version couldn't be deduced from file name"];
 			if (error)
 				*error = @"Feed item lacks sparkle:version attribute, and version couldn't be deduced from file name (would have used last component of a file name like AppName_1.3.4.zip)";
 			[self release];
@@ -193,7 +194,7 @@ static Logger *sLogger;
 		if( theInfoURL )
 		{
 			if( ![theInfoURL isKindOfClass: [NSString class]] )
-				[sLogger log:@"SUAppcastItem -initWithDictionary: Info URL is not of valid type: is %@", [theInfoURL class]];
+				[sLogger log:@"ERROR: SUAppcastItem -initWithDictionary: Info URL is not of valid type: is %@", [theInfoURL class]];
 			else
 				[self setInfoURL:[NSURL URLWithString:theInfoURL]];
 		}
@@ -202,6 +203,7 @@ static Logger *sLogger;
 		//	page, latter to download & install:
 		if( !enclosure && !theInfoURL )
 		{
+            [sLogger log:@"ERROR: No enclosure in feed item"];
 			if (error)
 				*error = @"No enclosure in feed item";
 			[self release];
@@ -211,6 +213,7 @@ static Logger *sLogger;
 		NSString*	enclosureURLString = [enclosure objectForKey:@"url"];
 		if( !enclosureURLString && !theInfoURL )
 		{
+            [sLogger log:@"ERROR: Feed item's enclosure lacks a URL"];
 			if (error)
 				*error = @"Feed item's enclosure lacks URL";
 			[self release];

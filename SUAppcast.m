@@ -66,10 +66,15 @@ static Logger *sLogger;
 
 - (void)fetchAppcastFromURL:(NSURL *)url
 {
+    [sLogger log:@"Fetch appcast from URL %@", url];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:30.0];
+    
     if (userAgentString)
+    {
+        [sLogger log:@"Use User-Agent '%@'", userAgentString];
         [request setValue:userAgentString forHTTPHeaderField:@"User-Agent"];
-            
+    }
+    
     download = [[NSURLDownload alloc] initWithRequest:request delegate:self];
 }
 
@@ -79,18 +84,25 @@ static Logger *sLogger;
 	if (destinationFilename)
 	{
 		destinationFilename = [destinationFilename stringByAppendingPathComponent:filename];
+        [sLogger log:@"Download location for appcast will be: '%@'", destinationFilename];
 		[download setDestination:destinationFilename allowOverwrite:NO];
 	}
+    else
+    {
+        [sLogger log:@"ERROR: Failed to obtain temporary directory for appcast download"];
+    }
 }
 
 - (void)download:(NSURLDownload *)aDownload didCreateDestination:(NSString *)path
 {
     [downloadFilename release];
     downloadFilename = [path copy];
+    [sLogger log:@"Download location for appcast will be: '%@'", downloadFilename];
 }
 
 - (void)downloadDidFinish:(NSURLDownload *)aDownload
-{    
+{
+    [sLogger log:@"Appcast download complete"];
 	NSError *error = nil;
 	
 	NSXMLDocument *document = nil;
@@ -104,8 +116,10 @@ static Logger *sLogger;
         if (NSAppKitVersionNumber < NSAppKitVersionNumber10_7) {
             // In order to avoid including external entities when parsing the appcast (a potential security vulnerability; see https://github.com/andymatuschak/Sparkle/issues/169), we ask NSXMLDocument to "tidy" the XML first. This happens to remove these external entities; it wouldn't be a future-proof approach, but it worked in these historical versions of OS X, and we have a more rigorous approach for 10.7+.
             options = NSXMLDocumentTidyXML;
+            [sLogger log:@"Asking NSXMLDocument to tidy the appcast XML"];
         } else {
             // In 10.7 and later, there's a real option for the behavior we desire.
+            [sLogger log:@"Enforce policy NSXMLNodeLoadExternalEntitiesSameOriginOnly"];
             options = NSXMLNodeLoadExternalEntitiesSameOriginOnly;
         }
 		document = [[[NSXMLDocument alloc] initWithContentsOfURL:[NSURL fileURLWithPath:downloadFilename] options:options error:&error] autorelease];
@@ -120,11 +134,13 @@ static Logger *sLogger;
 	}
 	else
 	{
+        [sLogger log:@"ERROR: Appcast download failed"];
 		failed = YES;
 	}
     
     if (nil == document)
     {
+        [sLogger log:@"ERROR: Appcast parsing failed; XML document is nil. Error: %@", error];
         failed = YES;
     }
     else
@@ -132,13 +148,14 @@ static Logger *sLogger;
         xmlItems = [document nodesForXPath:@"/rss/channel/item" error:&error];
         if (nil == xmlItems)
         {
+            [sLogger log:@"ERROR: Appcast parsing failed; xmlItems=nil. Error: %@", error];
             failed = YES;
         }
     }
     
 	if (failed == NO)
     {
-		
+        [sLogger log:@"Syntax-level parse of XML was successful. Will now import appcast data from XML tree."];
 		NSEnumerator *nodeEnum = [xmlItems objectEnumerator];
 		NSXMLNode *node;
 		NSMutableDictionary *nodesDict = [NSMutableDictionary dictionary];
@@ -212,7 +229,7 @@ static Logger *sLogger;
 			}
             else
             {
-				[sLogger log:@"Sparkle Updater: Failed to parse appcast item: %@.\nAppcast dictionary was: %@", errString, dict];
+				[sLogger log:@"ERROR: Failed to parse appcast item: %@.\nAppcast dictionary was: %@", errString, dict];
             }
             [nodesDict removeAllObjects];
             [dict removeAllObjects];
@@ -228,16 +245,24 @@ static Logger *sLogger;
 	
 	if (failed)
     {
+        [sLogger log:@"Parsing of appcast XML failed. Update will be aborted"];
         [self reportError:[NSError errorWithDomain:SUSparkleErrorDomain code:SUAppcastParseError userInfo:[NSDictionary dictionaryWithObjectsAndKeys:SULocalizedString(@"An error occurred while parsing the update feed.", nil), NSLocalizedDescriptionKey, nil]]];
 	}
-    else if ([delegate respondsToSelector:@selector(appcastDidFinishLoading:)])
+    else
     {
-        [delegate appcastDidFinishLoading:self];
+        if ([delegate respondsToSelector:@selector(appcastDidFinishLoading:)])
+        {
+            [sLogger log:@"Notifying delegate that the appcast feed loaded successfully"];
+            [delegate appcastDidFinishLoading:self];
+        }
+        
+        [sLogger log:@"THe appcast feed was loaded successfully"];
 	}
 }
 
 - (void)download:(NSURLDownload *)aDownload didFailWithError:(NSError *)error
 {
+    [sLogger log:@"ERROR: Appcast download failed with error: %@", error];
 	if (downloadFilename)
 	{
 #if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4
@@ -254,6 +279,7 @@ static Logger *sLogger;
 
 - (NSURLRequest *)download:(NSURLDownload *)aDownload willSendRequest:(NSURLRequest *)request redirectResponse:(NSURLResponse *)redirectResponse
 {
+    [sLogger log:@"Downloader will send redirect response: %@", [redirectResponse URL]];
 	return request;
 }
 
@@ -294,6 +320,7 @@ static Logger *sLogger;
 {
 	if (uas != userAgentString)
 	{
+        [sLogger log:@"Set User-Agent string to %@", uas];
 		[userAgentString release];
 		userAgentString = [uas copy];
 	}

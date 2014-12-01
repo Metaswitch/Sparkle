@@ -13,7 +13,7 @@
 // there are name-space collisions) so we can list all of them to start with:
 
 #import <Sparkle/SUUpdater.h>
-
+#import <Sparkle/SULog.h>
 #import <Sparkle/SUAppcast.h>
 #import <Sparkle/SUAppcastItem.h>
 #import <Sparkle/SUVersionComparisonProtocol.h>

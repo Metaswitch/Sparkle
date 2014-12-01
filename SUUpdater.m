@@ -68,6 +68,7 @@ static Logger *sLogger;
 - (id)initForBundle:(NSBundle *)bundle
 {
 	self = [super init];
+    [sLogger log:@"initForBundle"];
     if (bundle == nil) bundle = [NSBundle mainBundle];
 	
 	// Register as observer straight away to avoid exceptions on -dealloc when -unregisterAsObserver is called:
@@ -206,6 +207,7 @@ static Logger *sLogger;
 
 - (void)updateDriverDidFinish:(NSNotification *)note
 {
+    
 	if ([note object] == driver && [driver finished])
 	{
 		[driver release]; driver = nil;
@@ -219,14 +221,19 @@ static Logger *sLogger;
 }
 
 - (void)scheduleNextUpdateCheck
-{	
+{
+    [sLogger log:@"Scheduling next update check"];
 	if (checkTimer)
 	{
 		[checkTimer invalidate];
 		[checkTimer release];		// UK 2009-03-16 Timer is non-repeating, may have invalidated itself, so we had to retain it.
 		checkTimer = nil;
 	}
-	if (![self automaticallyChecksForUpdates]) return;
+	if (![self automaticallyChecksForUpdates])
+    {
+        [sLogger log:@"Asked to schedule next update, but we don't do automatic checks - so don't schedule anything"];
+        return;
+    }
 	
 	// How long has it been since last we checked for an update?
 	NSDate *lastCheckDate = [self lastUpdateCheckDate];
@@ -235,12 +242,22 @@ static Logger *sLogger;
 	
 	// Now we want to figure out how long until we check again.
 	NSTimeInterval delayUntilCheck, updateCheckInterval = [self updateCheckInterval];
-	if (updateCheckInterval < SU_MIN_CHECK_INTERVAL)
+    if (updateCheckInterval < SU_MIN_CHECK_INTERVAL) {
+        [sLogger log:@"Configured update check interval %f secs is too short. Use %f secs.", updateCheckInterval, SU_MIN_CHECK_INTERVAL];
 		updateCheckInterval = SU_MIN_CHECK_INTERVAL;
-	if (intervalSinceCheck < updateCheckInterval)
+    }
+    if (intervalSinceCheck < updateCheckInterval) {
+        [sLogger log:@"Update check interval is %f secs; last check was %f secs ago. Recheck in %f secs",
+         updateCheckInterval, intervalSinceCheck, updateCheckInterval - intervalSinceCheck];
 		delayUntilCheck = (updateCheckInterval - intervalSinceCheck); // It hasn't been long enough.
+    }
 	else
+    {
+        [sLogger log:@"Update check interval is %f secs; last check was %f secs ago. Recheck now!",
+         updateCheckInterval, intervalSinceCheck];
 		delayUntilCheck = 0; // We're overdue! Run one now.
+    }
+    
 	checkTimer = [[NSTimer scheduledTimerWithTimeInterval:delayUntilCheck target:self selector:@selector(checkForUpdatesInBackground) userInfo:nil repeats:NO] retain];		// UK 2009-03-16 Timer is non-repeating, may have invalidated itself, so we had to retain it.
 }
 
@@ -301,6 +318,8 @@ static Logger *sLogger;
 
 - (void)checkForUpdatesInBackground
 {
+    [sLogger log:@"checkForUpdatesInBackground"];
+    
 	// Background update checks should only happen if we have a network connection.
 	//	Wouldn't want to annoy users on dial-up by establishing a connection every
 	//	hour or so:
@@ -317,11 +336,13 @@ static Logger *sLogger;
 
 - (IBAction)checkForUpdates: (id)sender
 {
+    [sLogger log:@"Begin user-initiated update check."];
 	[self checkForUpdatesWithDriver:[[[SUUserInitiatedUpdateDriver alloc] initWithUpdater:self] autorelease]];
 }
 
 - (void)checkForUpdateInformation
 {
+    [sLogger log:@"Begin probing check for update information"];
 	[self checkForUpdatesWithDriver:[[[SUProbingUpdateDriver alloc] initWithUpdater:self] autorelease]];
 }
 
@@ -396,6 +417,7 @@ static Logger *sLogger;
 
 - (void)resetUpdateCycle
 {
+    [sLogger log:@"Resetting update cycle"];
     [[self class] cancelPreviousPerformRequestsWithTarget:self selector:@selector(resetUpdateCycle) object:nil];
     [self scheduleNextUpdateCheck];
 }
@@ -416,12 +438,20 @@ static Logger *sLogger;
 {
 	// Don't automatically update when the check interval is 0, to be compatible with 1.1 settings.
     if ([self updateCheckInterval] == 0)
-        return NO;	
-	return [host boolForKey:SUEnableAutomaticChecksKey];
+    {
+        [sLogger log:@"Will not automatically check for updates - interval is 0"];
+        return NO;
+    }
+    
+    BOOL autoCheck = [host boolForKey:SUEnableAutomaticChecksKey];
+    [sLogger log:@"Automatically check for updates? %s", autoCheck ? "yes" : "no"];
+    
+    return autoCheck;
 }
 
 - (void)setAutomaticallyDownloadsUpdates:(BOOL)automaticallyUpdates
 {
+    [sLogger log:@"Set automatically downloads updates: %s", automaticallyUpdates ? "true" : "false"];
 	[host setBool:automaticallyUpdates forUserDefaultsKey:SUAutomaticallyUpdateKey];
 }
 
@@ -429,14 +459,20 @@ static Logger *sLogger;
 {
 	// If the SUAllowsAutomaticUpdatesKey exists and is set to NO, return NO.
 	if ([host objectForInfoDictionaryKey:SUAllowsAutomaticUpdatesKey] && [host boolForInfoDictionaryKey:SUAllowsAutomaticUpdatesKey] == NO)
+    {
+        [sLogger log:@"automaticallyDownloadsUpdates? no (forbidden by key)"];
 		return NO;
+    }
 	
 	// Otherwise, automatically downloading updates is allowed. Does the user want it?
-	return [host boolForUserDefaultsKey:SUAutomaticallyUpdateKey];
+    BOOL autoDownload = [host boolForUserDefaultsKey:SUAutomaticallyUpdateKey];
+    [sLogger log:@"automaticallyDownloadsUpdates? %s", autoDownload ? "yes" : "no"];
+    return autoDownload;
 }
 
 - (void)setFeedURL:(NSURL *)feedURL
 {
+    [sLogger log:@"Set feed URL: %@", feedURL];
 	[host setObject:[feedURL absoluteString] forUserDefaultsKey:SUFeedURLKey];
 }
 
@@ -461,6 +497,7 @@ static Logger *sLogger;
 	if (customUserAgentString == userAgent)
 		return;
 
+    [sLogger log:@"Set custom user agent string: '%@'", userAgent];
 	[customUserAgentString release];
 	customUserAgentString = [userAgent copy];
 }
@@ -528,9 +565,14 @@ static Logger *sLogger;
 
 - (void)setUpdateCheckInterval:(NSTimeInterval)updateCheckInterval
 {
+    [sLogger log:@"Set update check interval to %f", updateCheckInterval];
 	[host setObject:[NSNumber numberWithDouble:updateCheckInterval] forUserDefaultsKey:SUScheduledCheckIntervalKey];
 	if (updateCheckInterval == 0) // For compatibility with 1.1's settings.
+    {
+        [sLogger log:@"Check interval is 0, so set automaticallyChecksForUpdates = 0"];
 		[self setAutomaticallyChecksForUpdates:NO];
+    }
+    
 	[[self class] cancelPreviousPerformRequestsWithTarget:self selector:@selector(resetUpdateCycle) object:nil];
 	
 	// Provide a small delay in case multiple preferences are being updated simultaneously.

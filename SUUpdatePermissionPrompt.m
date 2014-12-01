@@ -9,9 +9,16 @@
 #import "SUUpdatePermissionPrompt.h"
 
 #import "SUHost.h"
+#import "SULog.h"
 #import "SUConstants.h"
 
 @implementation SUUpdatePermissionPrompt
+
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
 
 - (BOOL)shouldAskAboutProfile
 {
@@ -35,10 +42,16 @@
 
 + (void)promptWithHost:(SUHost *)aHost systemProfile:(NSArray *)profile delegate:(id)d
 {
+    [sLogger log:@"Showing update permission prompt"];
+         
 	// If this is a background application we need to focus it in order to bring the prompt
 	// to the user's attention. Otherwise the prompt would be hidden behind other applications and
 	// the user would not know why the application was paused.
-	if ([aHost isBackgroundApplication]) { [NSApp activateIgnoringOtherApps:YES]; }
+	if ([aHost isBackgroundApplication])
+    {
+        [sLogger log:@"Is background application; give focus to alert window"];
+        [NSApp activateIgnoringOtherApps:YES];
+    }
 	
 	id prompt = [[[[self class] alloc] initWithHost:aHost systemProfile:profile delegate:d] autorelease];
 	[NSApp runModalForWindow:[prompt window]];
@@ -48,6 +61,8 @@
 
 - (void)awakeFromNib
 {
+    [sLogger log:@"Awake from nib"];
+    
 	if (![self shouldAskAboutProfile])
 	{
 		NSRect frame = [[self window] frame];
@@ -83,6 +98,7 @@
 	[self willChangeValueForKey:@"isShowingMoreInfo"];
 	isShowingMoreInfo = !isShowingMoreInfo;
 	[self didChangeValueForKey:@"isShowingMoreInfo"];
+    [sLogger log:@"'More info' toggled - is now %s", isShowingMoreInfo ? "true" : "false"];
 	
 	NSView *contentView = [[self window] contentView];
 	NSRect contentViewFrame = [contentView frame];
@@ -125,6 +141,7 @@
 
 - (IBAction)finishPrompt:(id)sender
 {
+    [sLogger log:@"Closing update permission prompt window"];
 	if (![delegate respondsToSelector:@selector(updatePermissionPromptFinishedWithResult:)])
 		[NSException raise:@"SUInvalidDelegate" format:@"SUUpdatePermissionPrompt's delegate (%@) doesn't respond to updatePermissionPromptFinishedWithResult:!", delegate];
 	[host setBool:shouldSendProfile forUserDefaultsKey:SUSendProfileInfoKey];

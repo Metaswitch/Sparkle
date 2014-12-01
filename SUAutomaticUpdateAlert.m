@@ -7,10 +7,16 @@
 //
 
 #import "SUAutomaticUpdateAlert.h"
-
 #import "SUHost.h"
+#import "SULog.h"
 
 @implementation SUAutomaticUpdateAlert
+
+static Logger *sLogger;
+
++(void) initialize {
+    sLogger = [[Logger alloc] initWithClass:self];
+}
 
 - (id)initWithAppcastItem:(SUAppcastItem *)item host:(SUHost *)aHost delegate:del;
 {
@@ -20,7 +26,7 @@
 		updateItem = [item retain];
 		delegate = del;
 		host = [aHost retain];
-		[self setShouldCascadeWindows:NO];	
+		[self setShouldCascadeWindows:NO];
 		[[self window] center];
 	}
 	return self;
@@ -37,18 +43,21 @@
 
 - (IBAction)installNow:sender
 {
+    [sLogger log:@"User clicked 'install now'"];
 	[self close];
 	[delegate automaticUpdateAlert:self finishedWithChoice:SUInstallNowChoice];
 }
 
 - (IBAction)installLater:sender
 {
+    [sLogger log:@"User clicked 'remind me later'"];
 	[self close];
 	[delegate automaticUpdateAlert:self finishedWithChoice:SUInstallLaterChoice];
 }
 
 - (IBAction)doNotInstall:sender
 {
+    [sLogger log:@"User clicked 'skip this update'"];
 	[self close];
 	[delegate automaticUpdateAlert:self finishedWithChoice:SUDoNotInstallChoice];
 }

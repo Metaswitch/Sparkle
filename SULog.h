@@ -20,7 +20,9 @@
 
 #include <Foundation/Foundation.h>
 
-@interface Logger : NSObject
+@interface Logger : NSObject {
+    NSString *className;
+}
 +(void) setLogFile: (NSString *)logFile;
 +(void) wrapLogsIfNecessary;
 -(id) initWithClass: (Class) clazz;

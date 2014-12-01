@@ -26,15 +26,9 @@ static NSDateFormatter *dateFormatter;
 
 @implementation Logger
 
-NSString *className;
-
-
 +(void) initialize {
     dateFormatter = [[NSDateFormatter alloc] init];
     dateFormatter.dateFormat = @"yyyy-MM-dd HH:mm:ss";
-    
-    // @@SMK: Remove this.
-    [self setLogFile: @"~/Library/Logs/SparkleFooLog.log"];
 }
 
 +(void) setLogFile: (NSString *) logFile {
